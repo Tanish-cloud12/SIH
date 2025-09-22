@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSUT Anuvad Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Color Variables for Theming */
+        :root {
+            --primary-color: #A72D2D;
+            --primary-color-light: #fde8e8;
+            --primary-color-text: #9b2424;
+
+            --bg-main: #f0f2f5;
+            --bg-container: #ffffff;
+            --bg-header: #ffffff;
+            --bg-input: #ffffff;
+            --bg-user-bubble: #e5e7eb;
+            --bg-quick-reply-container: rgba(255, 255, 255, 0.8);
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .dark {
+            --primary-color: #ef4444;
+            /* Brighter red for dark mode */
+            --primary-color-light: #3f1515;
+            --primary-color-text: #fca5a5;
+
+            --bg-main: #111827;
+            --bg-container: #1f2937;
+            --bg-header: #1f2937;
+            --bg-input: #374151;
+            --bg-user-bubble: #4b5563;
+            --bg-quick-reply-container: rgba(31, 41, 55, 0.8);
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --border-color: #4b5563;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            transition: background-color 0.3s ease;
+        }
+
+        .chatbot-container {
+            background-color: var(--bg-container);
+            transition: background-color 0.3s ease;
+            box-shadow: 0 10px 30px -5px var(--shadow-color);
+        }
+
+        .header,
+        .input-area {
+            background-color: var(--bg-header);
+            border-color: var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .quick-replies-container {
+            background-color: var(--bg-quick-reply-container);
+            backdrop-filter: blur(4px);
+            max-height: 120px;
+            /* Reduced menu height */
+            overflow-y: auto;
+            /* Adds scroll if content overflows */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) transparent;
+        }
+
+        .quick-replies-hidden {
+            max-height: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            overflow: hidden !important;
+            border-width: 0 !important;
+            opacity: 0 !important;
+        }
+
+        .quick-replies-container::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .quick-replies-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .quick-replies-container::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 10px;
+        }
+
+        .header h1,
+        #user-input,
+        .info-card-title {
+            color: var(--text-primary);
+        }
+
+        .header p,
+        .info-card-details {
+            color: var(--text-secondary);
+        }
+
+        .user-bubble p {
+            color: var(--text-primary);
+        }
+
+        .user-bubble {
+            background-color: var(--bg-user-bubble);
+        }
+
+        .info-card {
+            background-color: var(--bg-container);
+            border-color: var(--border-color);
+        }
+
+        #user-input {
+            background-color: var(--bg-input);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        #user-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .quick-reply-btn {
+            transition: background-color 0.2s ease, transform 0.1s ease, color 0.2s ease;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: var(--bg-input);
+        }
+
+        .quick-reply-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            /* Lift button on hover */
+        }
+
+        .bot-message-bubble {
+            background-color: var(--primary-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-bottom-left-radius: 0.5rem;
+            /* Smoother, less blocky look */
+            border-bottom-right-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+            border-top-left-radius: 0.125rem;
+        }
+
+        .user-bubble {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border-bottom-left-radius: 0.5rem;
+            /* Smoother, less blocky look */
+            border-bottom-right-radius: 0.5rem;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.125rem;
+        }
+
+        .send-btn {
+            background-color: var(--primary-color);
+        }
+
+        .send-btn:hover {
+            background-color: #862424;
+        }
+
+        .dark .send-btn:hover {
+            background-color: #b91c1c;
+        }
+
+        .focus-ring:focus {
+            ring-color: var(--primary-color);
+        }
+
+        /* New animations for messages appearing */
+        .animate-pop-in {
+            animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Splash Screen Styles */
+        #splash-screen {
+            background-color: #111827;
+            /* Dark background to match image */
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #splash-logo {
+            animation: logo-appear 1.5s ease-out forwards;
+            width: 300px;
+            /* Adjusted width for the new logo */
+            height: auto;
+            /* Maintain aspect ratio */
+        }
+
+        @keyframes logo-appear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen">
+
+    <div id="splash-screen" class="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50">
+        <img src="https://i.ibb.co/jvftSHsh/anuvad.png" alt="Anuvad Logo" id="splash-logo">
+    </div>
+
+    <div class="chatbot-container rounded-2xl flex flex-col w-full max-w-md h-[90vh] max-h-[750px] hidden">
+
+        <div class="header p-4 rounded-t-2xl shadow-md flex justify-between items-center border-b flex-shrink-0">
+            <div>
+                <h1 class="text-lg font-bold">NSUT Anuvad</h1>
+                <p id="greeting" class="text-xs"></p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <p class="text-xs text-green-500 flex items-center">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+                    Online
+                </p>
+                <p id="current-time" class="text-xs font-semibold"></p>
+                <button id="toggle-replies-btn" class="text-gray-500 hidden" title="Hide quick replies">
+                    <svg id="icon-hide-replies" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    <svg id="icon-show-replies" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden"
+                        viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <button id="language-toggle" class="text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9V3m0 18a9 9 0 009-9m-9 9a9 9 0 00-9-9" />
+                    </svg>
+                </button>
+                <button id="theme-toggle" class="text-gray-500">
+                    <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto"></div>
+
+        <div id="quick-replies" class="quick-replies-container p-3 border-t hidden"></div>
+
+        <div id="input-area" class="input-area p-3 rounded-b-2xl border-t flex items-center hidden">
+            <input type="text" id="user-input"
+                class="flex-1 border rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus-ring"
+                placeholder="Type your question...">
+            <button id="send-btn"
+                class="send-btn ml-3 text-white rounded-full p-2.5 focus:outline-none focus:ring-2 focus-ring focus:ring-offset-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                        d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const chatMessages = document.getElementById('chat-messages');
+        const quickRepliesContainer = document.getElementById('quick-replies');
+        const inputArea = document.getElementById('input-area');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const greetingEl = document.getElementById('greeting');
+        const timeEl = document.getElementById('current-time');
+        const themeToggle = document.getElementById('theme-toggle');
+        const languageToggle = document.getElementById('language-toggle');
+        const lightIcon = document.getElementById('theme-icon-light');
+        const darkIcon = document.getElementById('theme-icon-dark');
+        const body = document.body;
+        const splashScreen = document.getElementById('splash-screen');
+        const chatbotContainer = document.querySelector('.chatbot-container');
+        const toggleRepliesBtn = document.getElementById('toggle-replies-btn');
+        const iconHideReplies = document.getElementById('icon-hide-replies');
+        const iconShowReplies = document.getElementById('icon-show-replies');
+
+        // State
+        let language = 'en'; // Default language
+        let isBotTyping = false;
+
+        // =================================================================
+        // BACKEND COMMUNICATION
+        // =================================================================
+
+        async function sendMessage(data) {
+            if (isBotTyping) return;
+
+            const messageText = data.message || data.text;
+            if (messageText) {
+                addUserMessage(messageText);
+            }
+            if (data.message) {
+                userInput.value = '';
+            }
+
+            clearQuickReplies();
+            setBotTyping(true);
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: language,
+                        message: data.message || null,
+                        payload: data.payload || null
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const serverResponse = await response.json();
+                setBotTyping(false);
+                handleServerResponse(serverResponse);
+            } catch (error) {
+                console.error("Fetch error:", error);
+                setBotTyping(false);
+                addBotMessage("<p class='p-3'>Sorry, I'm having trouble connecting to the server. Please try again later.</p>");
+            }
+        }
+
+        function handleServerResponse(response) {
+            if (!response.actions || response.actions.length === 0) return;
+
+            response.actions.forEach((action, index) => {
+                setTimeout(() => {
+                    switch (action.type) {
+                        case 'add_bot_message':
+                            addBotMessage(action.html, action.wide || false);
+                            break;
+                        case 'add_link_card':
+                            addLinkCard(action.cardData);
+                            break;
+                        case 'add_quick_replies':
+                            addQuickReplies(action.replies);
+                            break;
+                        case 'set_language':
+                            language = action.language;
+                            break;
+                        case 'toggle_input_area':
+                            if (action.show) {
+                                inputArea.classList.remove('hidden');
+                            } else {
+                                inputArea.classList.add('hidden');
+                            }
+                            break;
+                        case 'fetch_timetable':
+                            fetchAndDisplayTimetable(action.year, action.branch);
+                            break;
+                    }
+                }, index * 400); // Stagger actions for a more natural feel
+            });
+        }
+
+
+        // =================================================================
+        // UI RENDERING FUNCTIONS
+        // =================================================================
+
+        function setBotTyping(isTyping) {
+            if (isTyping && !isBotTyping) {
+                isBotTyping = true;
+                const typingIndicator = document.createElement('div');
+                typingIndicator.id = 'typing-indicator';
+                typingIndicator.classList.add('flex', 'justify-start', 'mb-4', 'animate-pop-in');
+                typingIndicator.innerHTML = `
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <svg class="w-7 h-7" fill="var(--primary-color)" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0-6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                    </div>
+                    <div class="ml-3 bot-message-bubble text-white p-3 rounded-lg max-w-xs flex items-center space-x-1">
+                        <span class="w-2 h-2 bg-red-200 rounded-full animate-bounce" style="animation-delay: -0.3s;"></span>
+                        <span class="w-2 h-2 bg-red-200 rounded-full animate-bounce" style="animation-delay: -0.15s;"></span>
+                        <span class="w-2 h-2 bg-red-200 rounded-full animate-bounce"></span>
+                    </div>`;
+                chatMessages.appendChild(typingIndicator);
+            } else if (!isTyping && isBotTyping) {
+                isBotTyping = false;
+                document.getElementById('typing-indicator')?.remove();
+            }
+            scrollToBottom();
+        }
+
+        function addBotMessage(html, wide = false) {
+            const el = document.createElement('div');
+            el.classList.add('flex', 'justify-start', 'mb-4', 'animate-pop-in');
+            const widthClass = wide ? 'max-w-full w-full' : 'max-w-xs';
+            el.innerHTML = `
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <svg class="w-7 h-7" fill="var(--primary-color)" viewBox="0 0 24 24"><path d="M12,2A10,10,0,0,0,2,12a10,10,0,0,0,10,10,10,10,0,0,0,10-10A10,10,0,0,0,12,2Zm-1,15a1.5,1.5,0,1,1,1.5-1.5A1.5,1.5,0,0,1,11,17Zm1.5-5.5a1.5,1.5,0,0,1-1.5-1.5V8a1.5,1.5,0,0,1,3,0v2A1.5,1.5,0,0,1,12.5,11.5Z"/></svg>
+                </div>
+                <div class="ml-3 bot-message-bubble text-white p-0 sm:p-3 rounded-lg ${widthClass}">${html}</div>`;
+            chatMessages.appendChild(el);
+            scrollToBottom();
+        }
+
+        function addUserMessage(text) {
+            const el = document.createElement('div');
+            el.classList.add('flex', 'justify-end', 'mb-4', 'animate-pop-in');
+            el.innerHTML = `
+                <div class="mr-3 user-bubble p-3 rounded-lg max-w-xs"><p>${text}</p></div>
+                <div class="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                </div>`;
+            chatMessages.appendChild(el);
+            scrollToBottom();
+        }
+
+        function addLinkCard(cardData) {
+            let detailsHtml = '';
+            for (const [key, value] of Object.entries(cardData.details)) {
+                detailsHtml += `<p class="text-sm info-card-details mt-1"><span class="font-semibold">${key}:</span> ${value}</p>`;
+            }
+            const el = document.createElement('div');
+            el.classList.add('flex', 'justify-start', 'mb-4', 'animate-pop-in');
+            el.innerHTML = `
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <svg class="w-7 h-7" fill="var(--primary-color)" viewBox="0 0 24 24"><path d="M12,2A10,10,0,0,0,2,12a10,10,0,0,0,10,10,10,10,0,0,0,10-10A10,10,0,0,0,12,2Zm-1,15a1.5,1.5,0,1,1,1.5-1.5A1.5,1.5,0,0,1,11,17Zm1.5-5.5a1.5,1.5,0,0,1-1.5-1.5V8a1.5,1.5,0,0,1,3,0v2A1.5,1.5,0,0,1,12.5,11.5Z"/></svg>
+                </div>
+                <div class="info-card ml-3 border p-4 rounded-lg max-w-xs shadow-sm w-full">
+                    <h3 class="font-bold info-card-title">${cardData.title}</h3>
+                    <div class="mt-2">${detailsHtml}</div>
+                    <a href="${cardData.link}" target="_blank" class="block text-center mt-4 text-sm font-semibold py-2 px-4 rounded-lg" style="background-color: var(--primary-color-light); color: var(--primary-color-text); transition: background-color 0.2s ease;" onmouseover="this.style.backgroundColor='var(--primary-color)'; this.style.color='white'" onmouseout="this.style.backgroundColor='var(--primary-color-light)'; this.style.color='var(--primary-color-text)'">
+                        ${cardData.linkText}
+                    </a>
+                </div>`;
+            chatMessages.appendChild(el);
+            scrollToBottom();
+        }
+
+        function clearQuickReplies() {
+            quickRepliesContainer.innerHTML = '';
+            quickRepliesContainer.classList.add('hidden');
+            toggleRepliesBtn.classList.add('hidden');
+        }
+
+        function addQuickReplies(replies) {
+            clearQuickReplies();
+            if (!replies || replies.length === 0) return;
+
+            const container = document.createElement('div');
+            container.classList.add('flex', 'flex-wrap', 'gap-2', 'justify-center');
+            replies.forEach(reply => {
+                const button = document.createElement('button');
+                button.classList.add('quick-reply-btn', 'border', 'py-2', 'px-4', 'rounded-full', 'text-sm', 'font-semibold', 'flex', 'items-center', 'space-x-2');
+                button.innerHTML = `<span>${reply.icon}</span> <span>${reply.text}</span>`;
+                button.onclick = () => sendMessage({ text: reply.text, payload: reply.payload });
+                container.appendChild(button);
+            });
+            quickRepliesContainer.appendChild(container);
+
+            quickRepliesContainer.classList.remove('hidden');
+            quickRepliesContainer.classList.remove('quick-replies-hidden');
+            toggleRepliesBtn.classList.remove('hidden');
+
+            iconHideReplies.classList.remove('hidden');
+            iconShowReplies.classList.add('hidden');
+            toggleRepliesBtn.title = 'Hide quick replies';
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function fetchAndDisplayTimetable(year, branch) {
+            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+            try {
+                const promises = days.map(day =>
+                    fetch(`/get_timetable?year=${year}&branch=${branch}&day=${day}`).then(res => res.json()).then(data => ({ day, schedule: data }))
+                );
+                const dailySchedules = await Promise.all(promises);
+
+                let tableHtml = `<div class="w-full text-left text-sm rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-md">
+                                    <table class="w-full">
+                                    <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                        <tr>
+                                            <th class="p-2 font-semibold">Day</th><th class="p-2 font-semibold">Time</th>
+                                            <th class="p-2 font-semibold">Subject</th><th class="p-2 font-semibold">Teacher</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-700 dark:text-gray-200">`;
+                let hasEntries = false;
+                dailySchedules.forEach(({ day, schedule }) => {
+                    if (schedule && schedule.length > 0) {
+                        hasEntries = true;
+                        schedule.forEach((slot, index) => {
+                            tableHtml += `<tr class="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                                ${index === 0 ? `<td class="p-2 font-semibold bg-gray-50 dark:bg-gray-700" rowspan="${schedule.length}">${day}</td>` : ''}
+                                <td class="p-2">${slot.time}</td><td class="p-2">${slot.subject}</td><td class="p-2">${slot.teacher}</td></tr>`;
+                        });
+                    }
+                });
+                if (!hasEntries) {
+                    addBotMessage("<p class='p-3'>Sorry, I couldn't find a timetable for your selection.</p>");
+                    sendMessage({ payload: 'MAIN_MENU' }); // Show main menu again
+                    return;
+                }
+                tableHtml += `</tbody></table></div>`;
+                const finalMessage = `<div class="p-3"><p class="font-bold mb-2 text-white">Here's the timetable for Year ${year}, Branch ${branch}:</p>${tableHtml}</div>`;
+                addBotMessage(finalMessage, true);
+                sendMessage({ payload: 'MAIN_MENU' }); // Show main menu after displaying table
+            } catch (error) {
+                console.error("Failed to fetch timetable:", error);
+                addBotMessage("<p class='p-3'>Sorry, there was an error connecting to the server to get your timetable. Please make sure the backend is running and try again.</p>");
+            }
+        }
+
+        // =================================================================
+        // THEME & EVENT LISTENERS
+        // =================================================================
+        function applyTheme(theme) {
+            if (theme === 'dark') { body.classList.add('dark'); lightIcon.classList.add('hidden'); darkIcon.classList.remove('hidden'); }
+            else { body.classList.remove('dark'); lightIcon.classList.remove('hidden'); darkIcon.classList.add('hidden'); }
+        }
+
+        function toggleTheme() {
+            const currentTheme = body.classList.contains('dark') ? 'light' : 'dark';
+            localStorage.setItem('chatbotTheme', currentTheme);
+            applyTheme(currentTheme);
+        }
+
+        sendBtn.addEventListener('click', () => { if (userInput.value.trim()) sendMessage({ message: userInput.value.trim() }); });
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && userInput.value.trim()) sendMessage({ message: userInput.value.trim() }); });
+        themeToggle.addEventListener('click', toggleTheme);
+        languageToggle.addEventListener('click', () => sendMessage({ payload: 'CHANGE_LANGUAGE' }));
+
+        toggleRepliesBtn.addEventListener('click', () => {
+            quickRepliesContainer.classList.toggle('quick-replies-hidden');
+            const isHidden = quickRepliesContainer.classList.contains('quick-replies-hidden');
+            iconHideReplies.classList.toggle('hidden', isHidden);
+            iconShowReplies.classList.toggle('hidden', !isHidden);
+            toggleRepliesBtn.title = isHidden ? 'Show quick replies' : 'Hide quick replies';
+        });
+
+        // =================================================================
+        // INITIALIZATION
+        // =================================================================
+        window.onload = () => {
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    chatbotContainer.classList.remove('hidden');
+
+                    const savedTheme = localStorage.getItem('chatbotTheme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                    applyTheme(savedTheme);
+
+                    const hour = new Date().getHours();
+                    if (hour < 12) greetingEl.textContent = 'Good Morning!';
+                    else if (hour < 18) greetingEl.textContent = 'Good Afternoon!';
+                    else greetingEl.textContent = 'Good Evening!';
+
+                    const updateTime = () => timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    updateTime();
+                    setInterval(updateTime, 1000);
+
+                    // Kickstart the conversation by sending an empty message to the backend
+                    sendMessage({});
+
+                }, 500);
+            }, 2500);
+        };
+    </script>
+</body>
+
+</html>
